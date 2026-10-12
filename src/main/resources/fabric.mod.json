@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "${id}",
+  "version": "${version}",
+
+  "name": "${name}",
+  "description": "Client-side debug mod: prints every OpenGL error returned by GlStateManager#_getError (GL11.glGetError) to the chat, together with the error code, the calling stack trace and the GL device info. Click the message to copy the whole report.",
+  "authors": [
+    "OpenCode"
+  ],
+  "contact": {
+    "homepage": "https://modrinth.com",
+    "sources": "https://github.com/"
+  },
+  "license": "LGPL-3.0",
+
+  "icon": "icon.png",
+
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "dev.glerrorchat.GlErrorChatClient"
+    ]
+  },
+  "mixins": [
+    "gl_error_chat.mixins.json"
+  ],
+
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "${minecraft_dependency}"
+  }
+}

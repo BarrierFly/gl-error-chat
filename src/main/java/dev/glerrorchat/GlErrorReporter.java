@@ -41,7 +41,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Collects the OpenGL errors polled by {@code GlStateManager#_getError} and prints a detailed report to the chat.
+ * Collects the OpenGL errors polled by {@code GlStateManager#_getError} and by raw LWJGL
+ * {@code GL11.glGetError} calls, and prints a detailed report to the chat.
  *
  * <p>The report contains the error code, the name of the GL constant, the call site and stack trace that polled
  * the error, the GL device information and the current game state. The whole report is always written to the log,
@@ -70,9 +71,32 @@ public final class GlErrorReporter {
 	 * Called from {@code GlStateManager#_getError} on the render thread whenever a non-zero GL error is polled.
 	 */
 	public static void report(int error) {
-		long now = System.currentTimeMillis();
+		Thread thread = Thread.currentThread();
+		report(error, thread, thread.getStackTrace());
+	}
+
+	/**
+	 * Called from the raw {@code GL11.glGetError} mixin on the thread that polled a non-zero GL error.
+	 *
+	 * <p>Polls that went through {@code GlStateManager#_getError} are ignored: that call site has its own mixin
+	 * and reports them, so handling them here too would duplicate every such message.
+	 */
+	public static void reportRawPolled(int error) {
 		Thread thread = Thread.currentThread();
 		StackTraceElement[] stack = thread.getStackTrace();
+
+		for (StackTraceElement element : stack) {
+			if (element.getClassName().equals("com.mojang.blaze3d.opengl.GlStateManager")
+					&& element.getMethodName().equals("_getError")) {
+				return;
+			}
+		}
+
+		report(error, thread, stack);
+	}
+
+	private static void report(int error, Thread thread, StackTraceElement[] stack) {
+		long now = System.currentTimeMillis();
 		StackTraceElement caller = findCaller(stack);
 		String site = describeElement(caller);
 
@@ -258,6 +282,8 @@ public final class GlErrorReporter {
 		String className = element.getClassName();
 		return className.startsWith("dev.glerrorchat.")
 				|| className.equals("com.mojang.blaze3d.opengl.GlStateManager")
+				// the GL11 frames are the mixin handler copied into GL11 and GL11.glGetError itself
+				|| className.equals("org.lwjgl.opengl.GL11")
 				|| className.equals("java.lang.Thread");
 	}
 

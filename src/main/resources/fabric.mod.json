@@ -4,7 +4,7 @@
   "version": "${version}",
 
   "name": "${name}",
-  "description": "Client-side debug mod: prints every OpenGL error returned by GlStateManager#_getError (GL11.glGetError) to the chat, together with the error code, the calling stack trace and the GL device info. Click the message to copy the whole report.",
+  "description": "Client-side debug mod: prints every OpenGL error returned by GlStateManager#_getError or by a raw LWJGL GL11.glGetError call to the chat, together with the error code, the calling stack trace and the GL device info. Click the message to copy the whole report.",
   "authors": [
     "OpenCode"
   ],

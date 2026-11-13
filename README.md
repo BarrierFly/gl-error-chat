@@ -3,7 +3,13 @@
 [![License](https://img.shields.io/badge/license-LGPL--3.0-blue.svg)](http://www.gnu.org/licenses/lgpl-3.0.html)
 
 Client-side Fabric debug mod for Minecraft 1.21.11: every OpenGL error polled by
-`GlStateManager#_getError` (`GL11.glGetError`) is printed to the chat with as much detail as possible.
+`GlStateManager#_getError` or by a raw LWJGL `GL11.glGetError` call is printed to the chat with as much
+detail as possible.
+
+The raw LWJGL hook matters in practice: mods like Xaero's Minimap and Xaero's World Map poll and even
+drain the whole GL error queue with raw `GL11.glGetError` calls (`OpenGlHelper#clearErrors` runs every
+frame), so errors consumed there are invisible to a `GlStateManager`-only hook. Errors polled through
+`GlStateManager#_getError` are only reported once, by the `GlStateManager` mixin.
 
 Based on [Fallen-Breath/fabric-mod-template](https://github.com/Fallen-Breath/fabric-mod-template).
 

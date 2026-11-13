@@ -31,7 +31,8 @@ public class GlErrorChatClient implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
 		LOGGER.info(
-				"[{}] loaded, OpenGL errors polled by GlStateManager#_getError will now be printed to the chat",
+				"[{}] loaded, OpenGL errors polled by GlStateManager#_getError and by raw LWJGL GL11.glGetError calls "
+				+ "will now be printed to the chat",
 				MOD_ID
 		);
 	}

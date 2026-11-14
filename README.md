@@ -26,8 +26,9 @@ For every non-zero error returned by `GL11.glGetError`:
 
 The message can be clicked to copy the whole report; the full report is always written to the game log as well.
 
-Repeating errors are merged: the same error coming from the same call site within 5 seconds only produces one
-one-line reminder instead of a full report, so a broken mod cannot flood the chat.
+Repeating errors are merged: the same error code coming from the same call site within 5 seconds only produces one
+one-line reminder instead of a full report, so a broken mod cannot flood the chat. A different error code from the
+same call site is still reported separately, with its own full report.
 
 ### Build
 

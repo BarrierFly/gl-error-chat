@@ -48,8 +48,9 @@ import org.slf4j.LoggerFactory;
  * the error, the GL device information and the current game state. The whole report is always written to the log,
  * the chat message carries a shorter version and can be clicked to copy the full text.
  *
- * <p>Since a broken mod might poll {@code glGetError} on every single frame, reports of the same error coming from
- * the same call site within {@link #DEDUPE_WINDOW_MS} are merged into a single one-line chat message.
+ * <p>Since a broken mod might poll {@code glGetError} on every single frame, reports of the same error code coming
+ * from the same call site within {@link #DEDUPE_WINDOW_MS} are merged into a single one-line chat message. A
+ * different error code from the same call site is still reported separately.
  */
 public final class GlErrorReporter {
 	private static final Logger LOGGER = LoggerFactory.getLogger(GlErrorChatClient.MOD_ID);
@@ -60,7 +61,7 @@ public final class GlErrorReporter {
 
 	private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
 
-	private static final Map<String, SiteState> SITES = new HashMap<>();
+	private static final Map<SiteKey, SiteState> SITES = new HashMap<>();
 	private static long startTime = System.currentTimeMillis();
 	private static int totalReports;
 
@@ -99,27 +100,30 @@ public final class GlErrorReporter {
 		long now = System.currentTimeMillis();
 		StackTraceElement caller = findCaller(stack);
 		String site = describeElement(caller);
+		// a call site can poll different GL error codes over time, and each code deserves its own report:
+		// merging by the call site alone would fold a later GL_INVALID_VALUE into an earlier GL_INVALID_ENUM
+		SiteKey key = new SiteKey(error, site);
 
 		int occurrence;
 		boolean merged;
 
 		synchronized (SITES) {
 			totalReports++;
-			SiteState state = SITES.get(site);
+			SiteState state = SITES.get(key);
 
 			if (state != null && now - state.windowStart < DEDUPE_WINDOW_MS) {
 				state.count++;
 				occurrence = state.count;
 				merged = true;
 			} else {
-				SITES.put(site, new SiteState(now, 1));
+				SITES.put(key, new SiteState(now, 1));
 				occurrence = 1;
 				merged = false;
 			}
 
 			if (SITES.size() > MAX_TRACKED_SITES) {
-				for (Iterator<Map.Entry<String, SiteState>> it = SITES.entrySet().iterator(); it.hasNext(); ) {
-					Map.Entry<String, SiteState> entry = it.next();
+				for (Iterator<Map.Entry<SiteKey, SiteState>> it = SITES.entrySet().iterator(); it.hasNext(); ) {
+					Map.Entry<SiteKey, SiteState> entry = it.next();
 
 					if (now - entry.getValue().windowStart >= DEDUPE_WINDOW_MS) {
 						it.remove();
@@ -346,5 +350,11 @@ public final class GlErrorReporter {
 			this.windowStart = windowStart;
 			this.count = count;
 		}
+	}
+
+	/**
+	 * Identity of one deduplicated report: the same GL error code polled from the same call site.
+	 */
+	private record SiteKey(int error, String site) {
 	}
 }
